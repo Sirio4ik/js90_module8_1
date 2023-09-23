@@ -1,36 +1,42 @@
-import { throttle } from 'lodash.throttle';
+import throttle from 'lodash.throttle';
 
 const form = document.querySelector('.feedback-form');
-const email = document.querySelector('input[name="email"]');
-const message = document.querySelector('textarea[name="message"]');
-const LOCALSTORAGE_KEY = 'feedback-form-state';
+const inputEmail = form.querySelector('input');
+const inputMessage = form.querySelector('textarea');
+const STORAGE_KEY = 'feedback-form-state';
 
-form.addEventListener(
-  'input',
-  throttle(e => {
-    const objectToSave = { email: email.value, message: message.value };
-    localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(objectToSave));
-  }, 500)
-);
+let storageData = {};
 
-form.addEventListener('submit', e => {
+window.addEventListener('load', formFillingOnLoad);
+form.addEventListener('input', throttle(onInput, 500));
+form.addEventListener('submit', onSubmit);
+
+function onInput(e) {
+  storageData[e.target.name] = e.target.value;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(storageData));
+}
+
+function onSubmit(e) {
   e.preventDefault();
-  console.log({ email: email.value, message: message.value });
-  form.reset();
-  localStorage.removeItem(LOCALSTORAGE_KEY);
-});
-
-const load = key => {
-  try {
-    const serializedState = localStorage.getItem(key);
-    return serializedState === null ? undefined : JSON.parse(serializedState);
-  } catch (error) {
-    console.error('Get state error: ', error.message);
+  if (e.target.email.value === '' || e.target.message.value === '') {
+    return alert('Заповніть всі поля!');
   }
-};
+  form.reset();
+  console.log(storageData);
+  localStorage.removeItem(STORAGE_KEY);
+  storageData = {};
+}
 
-const storageData = load(LOCALSTORAGE_KEY);
-if (storageData) {
-  email.value = storageData.email;
-  message.value = storageData.message;
+function formFillingOnLoad() {
+  const savedInputs = JSON.parse(localStorage.getItem(STORAGE_KEY));
+  if (savedInputs) {
+    if (savedInputs.email) {
+      inputEmail.value = savedInputs.email;
+      storageData.email = savedInputs.email;
+    }
+    if (savedInputs.message) {
+      inputMessage.value = savedInputs.message;
+      storageData.message = savedInputs.message;
+    }
+  }
 }
